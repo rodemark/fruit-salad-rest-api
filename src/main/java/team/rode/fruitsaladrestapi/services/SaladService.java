@@ -1,6 +1,7 @@
 package team.rode.fruitsaladrestapi.services;
 
 import jakarta.transaction.Transactional;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import team.rode.fruitsaladrestapi.DTO.request.SaladRequestDto;
@@ -21,6 +22,7 @@ import java.util.List;
 
 import static team.rode.fruitsaladrestapi.util.CalculationUtil.BASE_NUTRITION_UNIT;
 
+@Slf4j
 @Service
 public class SaladService {
     private final SaladRepository saladRepository;
@@ -36,17 +38,25 @@ public class SaladService {
 
     protected Salad getSaladById(Long saladId) {
         return saladRepository.findById(saladId)
-                .orElseThrow(() -> new ResourceNotFoundException("Salad not found with id: " + saladId));
+                .orElseThrow(() -> {
+                    log.warn("Salad not found with id: {}", saladId);
+                    return new ResourceNotFoundException("Salad not found with id: " + saladId);
+                });
     }
 
     public List<SaladResponseDto> getSalads() {
-        return saladRepository.findAll().stream()
-                .map(salad -> dtoConverter.convertToDto(salad, SaladResponseDto.class)).toList();
+        List<Salad> salads = saladRepository.findAll();
+        log.info("Found {} salads in the database", salads.size());
+
+        return salads.stream()
+                .map(salad -> dtoConverter.convertToDto(salad, SaladResponseDto.class))
+                .toList();
     }
 
     @Transactional
     public SaladResponseDto addSalad(SaladRequestDto saladRequestDto) {
         if (saladRepository.existsByName(saladRequestDto.getName())) {
+            log.warn("Attempt to add a duplicate salad with name: {}", saladRequestDto.getName());
             throw new DuplicateResourceException("A salad with that name already exists!");
         }
 
@@ -54,6 +64,7 @@ public class SaladService {
         saladRequestDtoToSalad(saladRequestDto, salad);
 
         salad = saladRepository.save(salad);
+        log.info("New salad '{}' saved with id: {}", salad.getName(), salad.getId());
 
         return dtoConverter.convertToDto(salad, SaladResponseDto.class);
     }
@@ -63,6 +74,7 @@ public class SaladService {
         Salad salad = getSaladById(saladId);
 
         saladRepository.delete(salad);
+        log.info("Salad with id {} was deleted", saladId);
     }
 
     @Transactional
@@ -71,6 +83,7 @@ public class SaladService {
         saladRequestDtoToSalad(saladRequestDto, salad);
 
         salad = saladRepository.save(salad);
+        log.info("Salad '{}' with id {} was updated", salad.getName(), salad.getId());
 
         return dtoConverter.convertToDto(salad, SaladResponseDto.class);
     }
@@ -92,6 +105,7 @@ public class SaladService {
             int currentWeight = saladRequestDto.getSaladRecipe().get(nameFruit);
 
             if (currentWeight <= 0) {
+                log.error("Invalid weight (<= 0) for fruit: {}", nameFruit);
                 throw new InvalidProductWeightException("The weight of the fruit must be positive!");
             }
 

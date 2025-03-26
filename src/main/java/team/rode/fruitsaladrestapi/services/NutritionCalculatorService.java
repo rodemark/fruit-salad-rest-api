@@ -1,5 +1,6 @@
 package team.rode.fruitsaladrestapi.services;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import team.rode.fruitsaladrestapi.DTO.response.SaladNutritionResponseDto;
@@ -8,6 +9,7 @@ import team.rode.fruitsaladrestapi.util.CalculationUtil;
 
 import static team.rode.fruitsaladrestapi.util.CalculationUtil.BASE_NUTRITION_UNIT;
 
+@Slf4j
 @Service
 public class NutritionCalculatorService {
     private final SaladService saladService;
@@ -37,6 +39,7 @@ public class NutritionCalculatorService {
         nutrition.setSaladId(saladId);
         nutrition.setSaladName(salad.getName());
 
+        log.info("Nutrition calculated for salad '{}' (id: {})", salad.getName(), saladId);
         return nutrition;
     }
 }
