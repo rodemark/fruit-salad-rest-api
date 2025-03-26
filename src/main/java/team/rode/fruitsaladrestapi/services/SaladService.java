@@ -3,30 +3,29 @@ package team.rode.fruitsaladrestapi.services;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import team.rode.fruitsaladrestapi.DTO.request.IngredientRequestDto;
 import team.rode.fruitsaladrestapi.DTO.request.SaladRequestDto;
-import team.rode.fruitsaladrestapi.DTO.response.SaladNutritionResponseDto;
 import team.rode.fruitsaladrestapi.DTO.response.SaladResponseDto;
 import team.rode.fruitsaladrestapi.exceptionHandling.exceptions.DuplicateResourceException;
+import team.rode.fruitsaladrestapi.exceptionHandling.exceptions.InvalidProductWeightException;
 import team.rode.fruitsaladrestapi.exceptionHandling.exceptions.ResourceNotFoundException;
 import team.rode.fruitsaladrestapi.external.fruitapi.DTO.FruitNutritionResponseDto;
 import team.rode.fruitsaladrestapi.external.fruitapi.DTO.FruitResponseDto;
 import team.rode.fruitsaladrestapi.external.fruitapi.FruitService;
-import team.rode.fruitsaladrestapi.models.Ingredient;
+import team.rode.fruitsaladrestapi.models.NutritionInfo;
 import team.rode.fruitsaladrestapi.models.Salad;
 import team.rode.fruitsaladrestapi.repositories.SaladRepository;
+import team.rode.fruitsaladrestapi.util.CalculationUtil;
 import team.rode.fruitsaladrestapi.util.DtoConverter;
 
-import java.util.ArrayList;
 import java.util.List;
+
+import static team.rode.fruitsaladrestapi.util.CalculationUtil.BASE_NUTRITION_UNIT;
 
 @Service
 public class SaladService {
     private final SaladRepository saladRepository;
     private final DtoConverter dtoConverter;
     private final FruitService fruitService;
-
-    private static final double BASE_NUTRITION_UNIT = 100.0;
 
     @Autowired
     public SaladService(SaladRepository saladRepository, DtoConverter dtoConverter, FruitService fruitService) {
@@ -35,27 +34,14 @@ public class SaladService {
         this.fruitService = fruitService;
     }
 
-    private Salad getSaladByName(String name) {
-        return saladRepository.findByName(name)
-                .orElseThrow(() -> new ResourceNotFoundException("Salad not found with name: " + name));
+    protected Salad getSaladById(Long saladId) {
+        return saladRepository.findById(saladId)
+                .orElseThrow(() -> new ResourceNotFoundException("Salad not found with id: " + saladId));
     }
 
     public List<SaladResponseDto> getSalads() {
         return saladRepository.findAll().stream()
                 .map(salad -> dtoConverter.convertToDto(salad, SaladResponseDto.class)).toList();
-    }
-
-    public SaladNutritionResponseDto calculateNutritionPer100g(String saladName) {
-        Salad salad = getSaladByName(saladName);
-        double totalWeight = salad.getTotalWeight();
-        SaladNutritionResponseDto nutrition = new SaladNutritionResponseDto();
-
-        nutrition.setCalories(salad.getTotalCalories() / totalWeight * BASE_NUTRITION_UNIT);
-        nutrition.setFat(salad.getTotalFats() / totalWeight * BASE_NUTRITION_UNIT);
-        nutrition.setSugar(salad.getTotalSugar() / totalWeight * BASE_NUTRITION_UNIT);
-        nutrition.setCarbohydrates(salad.getTotalCarbohydrates() / totalWeight * BASE_NUTRITION_UNIT);
-
-        return nutrition;
     }
 
     @Transactional
@@ -65,24 +51,49 @@ public class SaladService {
         }
 
         Salad salad = new Salad();
+        saladRequestDtoToSalad(saladRequestDto, salad);
 
+        salad = saladRepository.save(salad);
+
+        return dtoConverter.convertToDto(salad, SaladResponseDto.class);
+    }
+
+    @Transactional
+    public void deleteSalad(Long saladId) {
+        Salad salad = getSaladById(saladId);
+
+        saladRepository.delete(salad);
+    }
+
+    @Transactional
+    public SaladResponseDto editSalad(SaladRequestDto saladRequestDto, Long saladId) {
+        Salad salad = getSaladById(saladId);
+        saladRequestDtoToSalad(saladRequestDto, salad);
+
+        salad = saladRepository.save(salad);
+
+        return dtoConverter.convertToDto(salad, SaladResponseDto.class);
+    }
+
+    private void saladRequestDtoToSalad(SaladRequestDto saladRequestDto, Salad salad) {
         salad.setName(saladRequestDto.getName());
         salad.setDescription(saladRequestDto.getDescription());
 
-        double totalWeight = 0;
+        int totalWeight = 0;
         double totalCalories = 0;
         double totalProteins = 0;
         double totalFats = 0;
         double totalCarbohydrates = 0;
         double totalSugar = 0;
 
-        List<Ingredient> ingredients = new ArrayList<>();
+        for (String nameFruit : saladRequestDto.getSaladRecipe().keySet()) {
+            FruitResponseDto fruitResponseDto = fruitService.getFruitByName(nameFruit);
 
-        List<IngredientRequestDto> ingredientRequestDtoList = saladRequestDto.getIngredients();
-        for (IngredientRequestDto ingredientRequestDto : ingredientRequestDtoList) {
-            FruitResponseDto fruitResponseDto = fruitService.getFruitByName(ingredientRequestDto.getFruitName());
+            int currentWeight = saladRequestDto.getSaladRecipe().get(nameFruit);
 
-            double currentWeight = ingredientRequestDto.getWeight();
+            if (currentWeight <= 0) {
+                throw new InvalidProductWeightException("The weight of the fruit must be positive!");
+            }
 
             FruitNutritionResponseDto nutrition = fruitResponseDto.getNutritions();
             totalWeight += currentWeight;
@@ -91,26 +102,18 @@ public class SaladService {
             totalFats += nutrition.getFat() * currentWeight / BASE_NUTRITION_UNIT;
             totalCarbohydrates += nutrition.getCarbohydrates() * currentWeight / BASE_NUTRITION_UNIT;
             totalSugar += nutrition.getSugar() * currentWeight / BASE_NUTRITION_UNIT;
-
-            Ingredient ingredient = new Ingredient();
-            ingredient.setFruitName(ingredientRequestDto.getFruitName());
-            ingredient.setWeight(currentWeight);
-            ingredient.setSalad(salad);
-
-            ingredients.add(ingredient);
         }
 
-        salad.setIngredients(ingredients);
-        salad.setTotalWeight(totalWeight);
-        salad.setTotalCalories(totalCalories);
-        salad.setTotalProteins(totalProteins);
-        salad.setTotalFats(totalFats);
-        salad.setTotalCarbohydrates(totalCarbohydrates);
-        salad.setTotalSugar(totalSugar);
+        NutritionInfo nutritionInfo = new NutritionInfo();
+        nutritionInfo.setTotalWeight(totalWeight);
+        nutritionInfo.setTotalCalories(CalculationUtil.round(totalCalories));
+        nutritionInfo.setTotalProteins(CalculationUtil.round(totalProteins));
+        nutritionInfo.setTotalFats(CalculationUtil.round(totalFats));
+        nutritionInfo.setTotalCarbohydrates(CalculationUtil.round(totalCarbohydrates));
+        nutritionInfo.setTotalSugar(CalculationUtil.round(totalSugar));
 
-        salad = saladRepository.save(salad);
+        salad.setNutritionInfo(nutritionInfo);
 
-        return dtoConverter.convertToDto(salad, SaladResponseDto.class);
+        salad.setSaladRecipe(saladRequestDto.getSaladRecipe());
     }
-
 }

@@ -4,6 +4,10 @@ import lombok.Data;
 
 @Data
 public class SaladNutritionResponseDto {
+    private Long saladId;
+
+    private String saladName;
+
     private double calories;
 
     private double fat;

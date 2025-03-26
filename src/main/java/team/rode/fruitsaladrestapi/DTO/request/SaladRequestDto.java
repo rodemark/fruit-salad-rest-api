@@ -4,15 +4,15 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
-import java.util.List;
+import java.util.Map;
 
 @Data
 public class SaladRequestDto {
-    @NotBlank(message = "Name is required")
+    @NotBlank(message = "Name is required!")
     private String name;
 
     private String description;
 
-    @NotEmpty(message = "Ingredients list cannot be empty")
-    private List<IngredientRequestDto> ingredients;
+    @NotEmpty(message = "A salad recipe cannot be empty!")
+    private Map<String, Integer> saladRecipe;
 }

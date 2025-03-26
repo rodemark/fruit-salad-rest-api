@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import team.rode.fruitsaladrestapi.DTO.request.SaladRequestDto;
 import team.rode.fruitsaladrestapi.DTO.response.SaladNutritionResponseDto;
 import team.rode.fruitsaladrestapi.DTO.response.SaladResponseDto;
+import team.rode.fruitsaladrestapi.services.NutritionCalculatorService;
 import team.rode.fruitsaladrestapi.services.SaladService;
 
 import java.util.List;
@@ -14,10 +15,12 @@ import java.util.List;
 @RequestMapping("/api/v1/salads")
 public class SaladController {
     private final SaladService saladService;
+    private final NutritionCalculatorService nutritionCalculatorService;
 
     @Autowired
-    public SaladController(SaladService saladService) {
+    public SaladController(SaladService saladService, NutritionCalculatorService nutritionCalculatorService) {
         this.saladService = saladService;
+        this.nutritionCalculatorService = nutritionCalculatorService;
     }
 
     @GetMapping
@@ -25,13 +28,24 @@ public class SaladController {
         return saladService.getSalads();
     }
 
-    @GetMapping("/{saladName}/nutrition")
-    public SaladNutritionResponseDto getSaladNutrition(@PathVariable String saladName) {
-        return saladService.calculateNutritionPer100g(saladName);
+    @GetMapping("/{saladId}/nutrition")
+    public SaladNutritionResponseDto getSaladNutritionPer100gByName(@PathVariable Long saladId) {
+        return nutritionCalculatorService.calculateNutritionPer100g(saladId);
     }
 
     @PostMapping
     public SaladResponseDto addSalad(@RequestBody @Valid SaladRequestDto saladRequestDto) {
         return saladService.addSalad(saladRequestDto);
+    }
+
+    @PatchMapping("/{saladId}")
+    public SaladResponseDto editSalad(@RequestBody @Valid SaladRequestDto saladRequestDto,
+                                      @PathVariable Long saladId) {
+        return saladService.editSalad(saladRequestDto, saladId);
+    }
+
+    @DeleteMapping("/{saladId}")
+    private void deleteSalad(@PathVariable Long saladId) {
+        saladService.deleteSalad(saladId);
     }
 }

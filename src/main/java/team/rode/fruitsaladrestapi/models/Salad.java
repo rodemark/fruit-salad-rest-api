@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
+import java.util.Map;
 
 @Entity
 @Table(name = "salad")
@@ -18,24 +18,12 @@ public class Salad extends BaseEntity{
     @Column(name = "description")
     private String description;
 
-    @Column(name = "total_weight")
-    private double totalWeight;
+    @Embedded
+    private NutritionInfo nutritionInfo;
 
-    @Column(name = "total_calories")
-    private double totalCalories;
-
-    @Column(name = "total_proteins")
-    private double totalProteins;
-
-    @Column(name = "total_fats")
-    private double totalFats;
-
-    @Column(name = "total_carbohydrates")
-    private double totalCarbohydrates;
-
-    @Column(name = "total_sugar")
-    private double totalSugar;
-
-    @OneToMany(mappedBy = "salad", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    private List<Ingredient> ingredients;
+    @ElementCollection
+    @CollectionTable(name = "salad_recipe", joinColumns = @JoinColumn(name = "salad_id"))
+    @MapKeyColumn(name = "name_fruit")
+    @Column(name = "weight")
+    private Map<String, Integer> saladRecipe;
 }
