@@ -6,7 +6,6 @@ import org.springframework.web.bind.annotation.*;
 import team.rode.fruitsaladrestapi.DTO.request.SaladRequestDto;
 import team.rode.fruitsaladrestapi.DTO.response.SaladNutritionResponseDto;
 import team.rode.fruitsaladrestapi.DTO.response.SaladResponseDto;
-import team.rode.fruitsaladrestapi.models.Salad;
 import team.rode.fruitsaladrestapi.services.SaladService;
 
 import java.util.List;

@@ -33,7 +33,7 @@ public class Salad extends BaseEntity{
     @Column(name = "total_carbohydrates")
     private double totalCarbohydrates;
 
-    @Column(name = "sugar")
+    @Column(name = "total_sugar")
     private double totalSugar;
 
     @OneToMany(mappedBy = "salad", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

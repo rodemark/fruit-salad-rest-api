@@ -1,8 +1,9 @@
 package team.rode.fruitsaladrestapi.DTO.request;
 
 import jakarta.validation.constraints.NotBlank;
-import lombok.Data;
 import jakarta.validation.constraints.NotEmpty;
+import lombok.Data;
+
 import java.util.List;
 
 @Data
