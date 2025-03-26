@@ -33,6 +33,11 @@ public class SaladController {
         return nutritionCalculatorService.calculateNutritionPer100g(saladId);
     }
 
+    @GetMapping("/duplicates")
+    public List<List<SaladResponseDto>> getDuplicateSalads() {
+        return saladService.findDuplicateSalads();
+    }
+
     @PostMapping
     public SaladResponseDto addSalad(@RequestBody @Valid SaladRequestDto saladRequestDto) {
         return saladService.addSalad(saladRequestDto);

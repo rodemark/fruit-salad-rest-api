@@ -18,7 +18,7 @@ import team.rode.fruitsaladrestapi.repositories.SaladRepository;
 import team.rode.fruitsaladrestapi.util.CalculationUtil;
 import team.rode.fruitsaladrestapi.util.DtoConverter;
 
-import java.util.List;
+import java.util.*;
 
 import static team.rode.fruitsaladrestapi.util.CalculationUtil.BASE_NUTRITION_UNIT;
 
@@ -129,5 +129,60 @@ public class SaladService {
         salad.setNutritionInfo(nutritionInfo);
 
         salad.setSaladRecipe(saladRequestDto.getSaladRecipe());
+    }
+
+    public List<List<SaladResponseDto>> findDuplicateSalads() {
+        List<Salad> salads = saladRepository.findAll();
+
+        Map<String, List<SaladResponseDto>> groupedSaladsByRecipe = groupSaladByRecipe(salads);
+
+        List<List<SaladResponseDto>> duplicates = new ArrayList<>();
+        for (List<SaladResponseDto> currentGroup : groupedSaladsByRecipe.values()) {
+            if (currentGroup.size() > 1) {
+                duplicates.add(currentGroup);
+            }
+        }
+
+        log.info("Found {} duplicate groups", duplicates.size());
+        return duplicates;
+    }
+
+    // Making the recipe look like: fruitName1:weight1, fruitName2:weight2, ...
+    private String getNormalizeRecipe(Map<String, Integer> recipe) {
+        List<String> keys = new ArrayList<>(recipe.keySet());
+        Collections.sort(keys);
+
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < keys.size(); i++) {
+            String key = keys.get(i);
+            Integer value = recipe.get(key);
+            sb.append(key).append(":").append(value);
+
+            if (i < keys.size() - 1) {
+                sb.append(",");
+            }
+        }
+
+        return sb.toString();
+    }
+
+    private Map<String, List<SaladResponseDto>> groupSaladByRecipe(List<Salad> salads) {
+        Map<String, List<SaladResponseDto>> groupedSaladsByRecipe = new HashMap<>();
+
+        for (Salad salad : salads) {
+            String recipe = getNormalizeRecipe(salad.getSaladRecipe());
+
+            List<SaladResponseDto> currentGroup;
+            if (groupedSaladsByRecipe.containsKey(recipe)) {
+                currentGroup = groupedSaladsByRecipe.get(recipe);
+            } else {
+                currentGroup = new ArrayList<>();
+            }
+
+            currentGroup.add(dtoConverter.convertToDto(salad, SaladResponseDto.class));
+            groupedSaladsByRecipe.put(recipe, currentGroup);
+        }
+
+        return groupedSaladsByRecipe;
     }
 }
