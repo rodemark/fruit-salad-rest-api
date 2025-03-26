@@ -10,7 +10,7 @@
     </parent>
     <groupId>team.rode</groupId>
     <artifactId>fruit-salad-rest-api</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>fruit-salad-rest-api</name>
     <description>fruit-salad-rest-api</description>
     <url/>

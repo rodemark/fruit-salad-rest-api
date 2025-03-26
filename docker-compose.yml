@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fruit-salad-rest-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - fruit-salad-network
+
+  postgres:
+    image: postgres:16.4
+    environment:
+      POSTGRES_DB: ${DB_NAME:-fruit_salad_db}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    container_name: fruit-salad-postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./src/main/resources/database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - fruit-salad-network
+
+volumes:
+  db_data:
+
+networks:
+  fruit-salad-network:
+    driver: bridge
