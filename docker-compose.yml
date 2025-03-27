@@ -5,6 +5,10 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: fruit-salad-rest-api
+    environment:
+      - DB_URL=${DB_URL:-jdbc:postgresql://fruit-salad-postgres:5432/fruit_salad_db}
+      - DB_USERNAME=${DB_USERNAME:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres}
     ports:
       - "8080:8080"
     depends_on:
@@ -13,7 +17,7 @@ services:
       - fruit-salad-network
 
   postgres:
-    image: postgres:16.4
+    image: postgres:16.8
     environment:
       POSTGRES_DB: ${DB_NAME:-fruit_salad_db}
       POSTGRES_USER: ${DB_USERNAME:-postgres}

@@ -16,7 +16,7 @@ public class FruitService {
 
     @Autowired
     public FruitService(WebClient.Builder webClientBuilder,
-                        @Value("${external.api.url}") String externalApiUrl) {
+                        @Value("${external.fruitapi.url}") String externalApiUrl) {
         this.webClient = webClientBuilder.baseUrl(externalApiUrl).build();
     }
 
