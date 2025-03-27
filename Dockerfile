@@ -1,7 +1,7 @@
 FROM eclipse-temurin:21 AS builder
 WORKDIR /fruit-salad-rest-api
 COPY . .
-RUN ./mvnw package -DskipTests=true
+RUN ./mvnw package -Dgroups=unit
 
 FROM eclipse-temurin:21
 WORKDIR /fruit-salad-rest-api
